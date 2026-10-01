@@ -7,6 +7,7 @@ import 'package:woo/core/widgets/button.dart';
 import 'package:woo/core/widgets/color.dart';
 import 'package:woo/core/widgets/formfield.dart';
 import 'package:woo/presentation/screens/pages/auth_page/register.dart';
+import 'package:woo/presentation/screens/pages/news.dart';
 import 'package:woo/presentation/screens/pages/slashscreens/recovery.dart';
 import 'package:woo/core/services/auth_service.dart';
 import 'package:woo/data/models/user.dart';
@@ -18,8 +19,7 @@ class LoginPage extends StatefulWidget {
 
 class _LoginPageState extends State<LoginPage> {
   final _formKey = GlobalKey<FormState>();
-  final TextEditingController _emailController =
-      TextEditingController(); // now email
+  final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   bool _loading = false;
   Map<String, dynamic>? _errors;
@@ -29,9 +29,9 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Future<void> _submit() async {
-    // validation client
-    if (_formKey.currentState != null && !_formKey.currentState!.validate())
+    if (_formKey.currentState != null && !_formKey.currentState!.validate()) {
       return;
+    }
 
     if (!mounted) return;
     setState(() {
@@ -40,24 +40,21 @@ class _LoginPageState extends State<LoginPage> {
     });
 
     try {
-      await AuthService.login(
+      final user = await AuthService.login(
         pseudo: _emailController.text.trim(),
         password: _passwordController.text,
       );
 
-      // Vérifie si le widget est toujours monté
       if (!mounted) return;
 
-      // Message de succès
-      _showSnack('Connexion réussie');
+      _showSnack('Connexion réussie ! Bienvenue ${user.pseudo}');
 
-      // Navigation différée pour éviter l'erreur "Build scheduled during frame"
       SchedulerBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
-        // Remplace par RecoveryPage
-        Navigator.of(
-          context,
-        ).pushReplacement(MaterialPageRoute(builder: (_) => RecoveryPage()));
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const NewsPage()),
+          (route) => false,
+        );
       });
     } catch (err) {
       if (!mounted) return;
@@ -85,8 +82,7 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
-
-            final colorScheme = Theme.of(context).colorScheme;
+    final colorScheme = Theme.of(context).colorScheme;
     return Scaffold(
       body: Stack(
         children: [
@@ -128,8 +124,9 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                   const SizedBox(height: 30),
 
-                  // Email field
+                  // Email / Pseudo field
                   FormFieldWidget(
+                    controller: _emailController,
                     labelContent: 'Pseudonyme',
                     maxLengtText: 30,
                     prefixIconWidget: Padding(
@@ -144,40 +141,27 @@ class _LoginPageState extends State<LoginPage> {
                         size: 25,
                       ),
                     ),
-                    suffixIconVisible: Icon(
-                      Icons.check_circle_sharp,
-                      color: Colors.green,
-                      size: 24,
-                    ),
-                    suffixIconHidden: Padding(
-                      padding: const EdgeInsets.only(right: 8.0),
-                      child: Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          Icon(
-                            Icons.warning_amber_rounded,
-                            color: Colors.red,
-                            size: 24,
-                          ),
-                          Icon(
-                            Icons.warning_rounded,
-                            color: Colors.white,
-                            size: 24,
-                          ),
-                        ],
-                      ),
-                    ),
-                    onTap: () {},
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Veuillez saisir votre pseudonyme';
+                      }
+                      return null;
+                    },
                   ),
                   const SizedBox(height: 16),
                   FormFieldWidget(
+                    controller: _passwordController,
                     labelContent: 'Mot de passe',
                     maxLengtText: 20,
-                    prefixIconWidget: Icon(Icons.lock, color: Colors.white),
+                    prefixIconWidget: const Icon(Icons.lock, color: Colors.white),
                     isPasswordField: true,
-                    onTap: () {},
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Veuillez saisir votre mot de passe';
+                      }
+                      return null;
+                    },
                   ),
-               
 
                   const SizedBox(height: 16),
                   if (_errors != null)
@@ -189,13 +173,13 @@ class _LoginPageState extends State<LoginPage> {
                           if (_errors!['message'] != null)
                             Text(
                               _errors!['message'].toString(),
-                              style: TextStyle(color: Colors.red),
+                              style: const TextStyle(color: Colors.red),
                             ),
                           if (_errors!['errors'] != null)
                             for (var e in (_errors!['errors'] as Map).entries)
                               Text(
                                 '${e.key}: ${(e.value as List).join(", ")}',
-                                style: TextStyle(color: Colors.red),
+                                style: const TextStyle(color: Colors.red),
                               ),
                         ],
                       ),
@@ -205,20 +189,13 @@ class _LoginPageState extends State<LoginPage> {
 
                   Center(
                     child: Button(
-                      name:  'Connexion',
+                      name: _loading ? 'Connexion...' : 'Connexion',
                       buttonColor: AppColors.primary,
                       buttonTextColor: colorScheme.surface,
                       buttonWidth: double.infinity,
                       buttonFonSize: 15,
                       borderbuttonColor: Colors.white,
-                      onTap: (){
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => RecoveryPage(),
-                          ),
-                        );
-                      },
+                      onTap: _loading ? () {} : _submit,
                     ),
                   ), 
 

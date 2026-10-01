@@ -8,9 +8,8 @@ import 'package:woo/core/widgets/formfield.dart';
 import 'package:woo/presentation/screens/pages/add_profile_photo.dart';
 import 'package:woo/presentation/screens/pages/condition.dart';
 import 'package:woo/presentation/screens/pages/auth_page/login.dart';
+import 'package:woo/presentation/screens/pages/news.dart';
 import 'package:woo/core/services/auth_service.dart';
-
-
 
 class RegisterPage extends StatefulWidget {
   @override
@@ -20,11 +19,9 @@ class RegisterPage extends StatefulWidget {
 class _RegisterPageState extends State<RegisterPage> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _usernameController = TextEditingController();
-  final TextEditingController _emailController =
-      TextEditingController(); // added
+  final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _confirmPasswordController =
-      TextEditingController();
+  final TextEditingController _confirmPasswordController = TextEditingController();
   bool _showPassword = false;
   bool _acceptTerms = false;
   bool _loading = false;
@@ -34,8 +31,9 @@ class _RegisterPageState extends State<RegisterPage> {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
 
   Future<void> _submit() async {
-    if (_formKey.currentState != null && !_formKey.currentState!.validate())
+    if (_formKey.currentState != null && !_formKey.currentState!.validate()) {
       return;
+    }
     if (!_acceptTerms) {
       _showSnack("Vous devez accepter les conditions d'utilisation.");
       return;
@@ -49,7 +47,7 @@ class _RegisterPageState extends State<RegisterPage> {
       _errors = null;
     });
     try {
-      await AuthService.register(
+      final user = await AuthService.register(
         pseudo: _usernameController.text.trim(),
         password: _passwordController.text,
         passwordConfirmation: _confirmPasswordController.text,
@@ -63,12 +61,15 @@ class _RegisterPageState extends State<RegisterPage> {
         question3: 'Perso préféré ?',
         answer3: 'Otaku',
       );
-      _showSnack('Inscription réussie');
-      Navigator.pushReplacement(
+      _showSnack('Inscription réussie ! Bienvenue ${user.pseudo}');
+      if (!mounted) return;
+      Navigator.pushAndRemoveUntil(
         context,
-        MaterialPageRoute(builder: (_) => ProfileImagePage()),
+        MaterialPageRoute(builder: (_) => const NewsPage()),
+        (route) => false,
       );
     } catch (err) {
+      if (!mounted) return;
       setState(() {
         _loading = false;
       });
@@ -94,7 +95,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
   @override
   Widget build(BuildContext context) {
-            final colorScheme = Theme.of(context).colorScheme;
+    final colorScheme = Theme.of(context).colorScheme;
     return Scaffold(
       body: Stack(
         children: [
@@ -152,32 +153,15 @@ class _RegisterPageState extends State<RegisterPage> {
                         size: 25,
                       ),
                     ),
-                    suffixIconVisible: Icon(
-                      Icons.check_circle_sharp,
-                      color: Colors.green,
-                      size: 24,
-                    ),
-                    suffixIconHidden: Padding(
-                      padding: const EdgeInsets.only(right: 8.0),
-                      child: Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          // Le “fond” rouge
-                          Icon(
-                            Icons.warning_amber_rounded,
-                            color: Colors.red,
-                            size: 24,
-                          ),
-                          // La “bordure” blanche, un peu plus petite
-                          Icon(
-                            Icons.warning_rounded,
-                            color: Colors.white,
-                            size: 24,
-                          ),
-                        ],
-                      ),
-                    ),
-                    onTap: () {},
+                    validator: (s) {
+                      if (s == null || s.trim().isEmpty) {
+                        return 'Veuillez entrer un pseudonyme';
+                      }
+                      if (s.trim().length < 3) {
+                        return 'Le pseudo doit faire au moins 3 caractères';
+                      }
+                      return null;
+                    },
                   ),
 
                   const SizedBox(height: 16),
@@ -186,11 +170,12 @@ class _RegisterPageState extends State<RegisterPage> {
                     controller: _passwordController,
                     labelContent: 'Mot de passe',
                     maxLengtText: 20,
-                    prefixIconWidget: Icon(Icons.lock, color: Colors.white),
-                    // isPasswordField: true,
+                    prefixIconWidget: const Icon(Icons.lock, color: Colors.white),
+                    isPasswordField: !_showPassword,
                     validator: (s) {
-                      if (s == null || s.length < 6)
-                        return 'Mot de passe min 6 caractères';
+                      if (s == null || s.length < 8) {
+                        return 'Mot de passe min 8 caractères';
+                      }
                       return null;
                     },
                   ),
@@ -200,36 +185,15 @@ class _RegisterPageState extends State<RegisterPage> {
                     controller: _confirmPasswordController,
                     labelContent: 'Confirmer le mot de passe',
                     maxLengtText: 20,
-                    prefixIconWidget: Icon(Icons.lock, color: Colors.white),
-                    // isPasswordField: true,
-                    suffixIconVisible: Icon(
-                      Icons.check_circle_sharp,
-                      color: Colors.green,
-                      size: 24,
-                    ),
-                    suffixIconHidden: Padding(
-                      padding: const EdgeInsets.only(right: 8.0),
-                      child: Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          // Le “fond” rouge
-                          Icon(
-                            Icons.warning_amber_rounded,
-                            color: Colors.red,
-                            size: 24,
-                          ),
-                          // La “bordure” blanche, un peu plus petite
-                          Icon(
-                            Icons.warning_rounded,
-                            color: Colors.white,
-                            size: 24,
-                          ),
-                        ],
-                      ),
-                    ),
+                    prefixIconWidget: const Icon(Icons.lock, color: Colors.white),
+                    isPasswordField: !_showPassword,
                     validator: (s) {
-                      if (s == null || s.isEmpty)
+                      if (s == null || s.isEmpty) {
                         return 'Confirmez le mot de passe';
+                      }
+                      if (s != _passwordController.text) {
+                        return 'Les mots de passe ne correspondent pas';
+                      }
                       return null;
                     },
                   ),
@@ -296,21 +260,38 @@ class _RegisterPageState extends State<RegisterPage> {
                     ],
                   ),
 
+                  const SizedBox(height: 16),
+                  if (_errors != null)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (_errors!['message'] != null)
+                            Text(
+                              _errors!['message'].toString(),
+                              style: const TextStyle(color: Colors.red),
+                            ),
+                          if (_errors!['errors'] != null)
+                            for (var e in (_errors!['errors'] as Map).entries)
+                              Text(
+                                '${e.key}: ${(e.value as List).join(", ")}',
+                                style: const TextStyle(color: Colors.red),
+                              ),
+                        ],
+                      ),
+                    ),
+
                   const SizedBox(height: 20),
                   Center(
                     child: Button(
-                      name: 'Suivant',
+                      name: _loading ? 'Inscription...' : 'S\'inscrire',
                       buttonColor: AppColors.primary,
                       buttonTextColor: colorScheme.surface,
                       buttonWidth: double.infinity,
                       buttonFonSize: 15,
                       borderbuttonColor: Colors.white,
-                      onTap: (){Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => ProfileImagePage(),
-                        ),
-                      );},
+                      onTap: _loading ? () {} : _submit,
                     ),
                   ),
 

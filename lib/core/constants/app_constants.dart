@@ -5,13 +5,13 @@ class AppConstants {
   static const String appName = "World Of Otaku";
   static const String appVersion = "1.0.0 (Bêta 2026)";
 
-  // Base URL dynamique selon la plateforme
+  // Base URL IP locale de l ordinateur pour acces depuis telephone Android physique sur le meme Wi-Fi
   static String get baseUrl {
     if (kIsWeb) {
       return "http://localhost:8000/api/v1";
     }
-    // Pour émulateur Android
-    return "http://10.0.2.2:8000/api/v1";
+    // IP locale PC sur le Wi-Fi (permet au telephone physique Android de se connecter au backend local)
+    return "http://192.168.84.12:8000/api/v1";
   }
 
   // Endpoints API v1
